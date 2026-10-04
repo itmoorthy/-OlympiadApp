@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Sparkles,
   Flame,
@@ -9,16 +9,17 @@ import {
   Clock,
   BookOpen,
 } from 'lucide-react';
-import { SubjectId, UserProgress, Grade, AppView } from '../../types';
-import { SUBJECT_CONFIGS } from '../../config/olympiadConfig';
+import { SubjectId, UserProgress, Grade, AppView, Difficulty } from '../../types';
+import { SUBJECT_CONFIGS, DIFFICULTIES } from '../../config/olympiadConfig';
 import { ProgressService } from '../../services/progressService';
 import { GamificationService } from '../../services/gamificationService';
+import { Modal } from '../common/Modal';
 
 interface HomeScreenProps {
   progress: UserProgress;
   selectedGrade: Grade;
   onSelectSubject: (subject: SubjectId) => void;
-  onQuickPractice: () => void;
+  onQuickPractice: (subject: SubjectId, count: number, difficulty: Difficulty) => void;
   onStartDailyChallenge: () => void;
   onNavigate: (view: AppView) => void;
 }
@@ -31,10 +32,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onStartDailyChallenge,
   onNavigate,
 }) => {
+  const [isQuickPracticeModalOpen, setIsQuickPracticeModalOpen] = useState(false);
+  const [quickSubject, setQuickSubject] = useState<SubjectId>('IMO');
+  const [quickCount, setQuickCount] = useState<number>(10);
+  const [quickDifficulty, setQuickDifficulty] = useState<Difficulty>('Olympiad Challenge');
+
   const overallAccuracy = ProgressService.getOverallAccuracy(progress);
   const rank = GamificationService.getRank(progress.stars);
   const today = new Date().toISOString().split('T')[0];
   const isDailyDone = Boolean(progress.dailyChallengeHistory?.[today]?.completed);
+
+  const handleStartQuick = () => {
+    setIsQuickPracticeModalOpen(false);
+    onQuickPractice(quickSubject, quickCount, quickDifficulty);
+  };
 
   return (
     <div className="max-w-4xl mx-auto py-5 px-4 pb-24 md:pb-8">
@@ -64,11 +75,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {/* Quick CTA Buttons */}
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={onQuickPractice}
+              onClick={() => setIsQuickPracticeModalOpen(true)}
               className="min-h-[48px] px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-lg shadow-black/20 flex items-center gap-2 transition-transform active:scale-95 cursor-pointer"
             >
               <Dices className="w-4 h-4 text-amber-400" />
-              <span>Quick Practice (10 Questions)</span>
+              <span>Quick Practice</span>
               <ArrowRight className="w-4 h-4 text-amber-400" />
             </button>
 
@@ -147,7 +158,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 Science
               </p>
               <p className="text-xs text-slate-600 leading-snug line-clamp-2">
-                Plants, animals, human body, force, energy, matter & outer space.
+                Plants, animals, food, matter, energy, universe & SOF 2025 questions.
               </p>
             </div>
 
@@ -194,7 +205,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         {/* Quick Practice Card */}
         <div
-          onClick={onQuickPractice}
+          onClick={() => setIsQuickPracticeModalOpen(true)}
           className="bg-white rounded-3xl p-5 border-2 border-amber-200/90 shadow-sm hover:border-amber-400 transition-all flex items-center justify-between cursor-pointer active:scale-98"
         >
           <div className="flex items-center gap-3.5">
@@ -206,7 +217,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 Quick Practice
               </h3>
               <p className="text-xs text-slate-600">
-                10 random questions to test your skills right now.
+                Choose 10, 20, or 30 questions to test your skills right now.
               </p>
             </div>
           </div>
@@ -253,7 +264,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
           <button
             onClick={() => onNavigate('progress')}
-            className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1"
+            className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
           >
             <span>View Parent Dashboard</span>
             <span>→</span>
@@ -314,6 +325,96 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         </div>
       </div>
+
+      {/* QUICK PRACTICE CONFIGURATION MODAL (Asks for 10, 20, 30 questions) */}
+      <Modal
+        isOpen={isQuickPracticeModalOpen}
+        onClose={() => setIsQuickPracticeModalOpen(false)}
+        title="Start Quick Practice"
+      >
+        <div className="space-y-5">
+          {/* Subject choice */}
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Select Subject:
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['IMO', 'ISO', 'ICSO'] as SubjectId[]).map((subj) => (
+                <button
+                  key={subj}
+                  onClick={() => setQuickSubject(subj)}
+                  className={`py-2.5 px-2 rounded-2xl border-2 font-bold text-sm transition-all cursor-pointer ${
+                    quickSubject === subj
+                      ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs ring-2 ring-amber-400/20'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-amber-300'
+                  }`}
+                >
+                  {SUBJECT_CONFIGS[subj].emoji} {subj}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Question Count choice: 10, 20, 30 */}
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Choose Number of Questions:
+            </label>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[10, 20, 30].map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setQuickCount(num)}
+                  className={`py-3.5 rounded-2xl font-extrabold text-base border-2 transition-all cursor-pointer ${
+                    quickCount === num
+                      ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs ring-2 ring-amber-400/20'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-amber-300'
+                  }`}
+                >
+                  {num} Questions
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Difficulty Level (Default: Olympiad Challenge) */}
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Difficulty Level:
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {DIFFICULTIES.map((diff) => (
+                <button
+                  key={diff}
+                  onClick={() => setQuickDifficulty(diff)}
+                  className={`py-2 px-3 rounded-xl border-2 text-xs font-bold transition-all text-center cursor-pointer ${
+                    quickDifficulty === diff
+                      ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs ring-2 ring-amber-400/20'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-amber-300'
+                  }`}
+                >
+                  {diff}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-2">
+            <button
+              onClick={handleStartQuick}
+              className="w-full py-3.5 bg-linear-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-extrabold rounded-2xl shadow-lg shadow-amber-500/25 active:scale-98 transition-all cursor-pointer text-base"
+            >
+              Start {quickCount} Questions Practice
+            </button>
+            <button
+              onClick={() => setIsQuickPracticeModalOpen(false)}
+              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

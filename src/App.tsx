@@ -80,11 +80,12 @@ export default function App() {
   const handleStartTopicPractice = async (
     subject: SubjectId,
     topic: string,
-    difficulty: Difficulty
+    difficulty: Difficulty = settings.defaultDifficulty,
+    count: number = 10
   ) => {
     setActiveSubject(subject);
     setActiveSessionTitle(`${subject} Practice: ${topic}`);
-    setActiveSessionSubtitle(`${settings.selectedGrade} • ${difficulty}`);
+    setActiveSessionSubtitle(`${count} Questions • ${settings.selectedGrade} • ${difficulty}`);
     setIsLoadingSession(true);
     setCurrentView('practice_session');
 
@@ -94,7 +95,7 @@ export default function App() {
         grade: settings.selectedGrade,
         topic,
         difficulty,
-        count: 5,
+        count,
       });
       setActiveQuestions(questions);
     } finally {
@@ -106,7 +107,7 @@ export default function App() {
   const handleStartRandomPractice = async (
     subject: SubjectId,
     count: number,
-    difficulty: Difficulty
+    difficulty: Difficulty = settings.defaultDifficulty
   ) => {
     setActiveSubject(subject);
     setActiveSessionTitle(`${subject} Random Challenge`);
@@ -127,20 +128,24 @@ export default function App() {
     }
   };
 
-  // 3. Quick Practice (10 Questions from Home)
-  const handleQuickPractice = async () => {
-    setActiveSubject('IMO');
-    setActiveSessionTitle('Quick Olympiad Sprint');
-    setActiveSessionSubtitle(`10 Questions • ${settings.selectedGrade}`);
+  // 3. Quick Practice (Choose 10, 20, 30 from Home)
+  const handleQuickPractice = async (
+    subject: SubjectId = 'IMO',
+    count: number = 10,
+    difficulty: Difficulty = settings.defaultDifficulty
+  ) => {
+    setActiveSubject(subject);
+    setActiveSessionTitle(`${subject} Quick Practice`);
+    setActiveSessionSubtitle(`${count} Questions • ${settings.selectedGrade} • ${difficulty}`);
     setIsLoadingSession(true);
     setCurrentView('practice_session');
 
     try {
       const { questions } = await QuestionGenerator.getQuestions({
-        subject: 'IMO',
+        subject,
         grade: settings.selectedGrade,
-        count: 10,
-        difficulty: settings.defaultDifficulty,
+        count,
+        difficulty,
       });
       setActiveQuestions(questions);
     } finally {
@@ -149,10 +154,13 @@ export default function App() {
   };
 
   // 4. Exam-Style / Previous-Year Practice Handler
-  const handleStartPreviousYearPractice = async (subject: SubjectId) => {
+  const handleStartPreviousYearPractice = async (
+    subject: SubjectId,
+    count: number = 10
+  ) => {
     setActiveSubject(subject);
     setActiveSessionTitle(`${subject} Original Olympiad-Style Paper`);
-    setActiveSessionSubtitle(`Official Format • ${settings.selectedGrade}`);
+    setActiveSessionSubtitle(`${count} Questions • Official Format • ${settings.selectedGrade}`);
     setIsLoadingSession(true);
     setCurrentView('practice_session');
 
@@ -160,7 +168,7 @@ export default function App() {
       const { questions } = await QuestionGenerator.getQuestions({
         subject,
         grade: settings.selectedGrade,
-        count: 8,
+        count,
         difficulty: 'Olympiad Challenge',
       });
       setActiveQuestions(questions);
@@ -299,8 +307,8 @@ export default function App() {
             {currentView === 'progress' && (
               <ParentDashboard
                 progress={progress}
-                onPracticeTopic={(subject, topic, difficulty) =>
-                  handleStartTopicPractice(subject, topic, difficulty)
+                onPracticeTopic={(subject, topic, difficulty, count) =>
+                  handleStartTopicPractice(subject, topic, difficulty, count)
                 }
                 onReviewQuestions={() => setIsQuestionReviewOpen(true)}
               />

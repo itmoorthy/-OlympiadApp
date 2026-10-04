@@ -2,5 +2,7 @@
   "name": "Olympiad Buddy",
   "description": "Fun, kid-friendly Olympiad preparation app for Grade 3, 4, and 5 students covering IMO (Math), ISO (Science), and ICSO (Computer Science) with AI questions, practice modes, mock exams, and parent insights.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

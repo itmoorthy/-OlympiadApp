@@ -10,7 +10,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   selectedGrade: 'Grade 4',
   soundEnabled: true,
   animationEnabled: true,
-  defaultDifficulty: 'Medium',
+  defaultDifficulty: 'Olympiad Challenge',
 };
 
 const DEFAULT_PROGRESS: UserProgress = {
@@ -50,7 +50,12 @@ export class StorageService {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
       if (!data) return DEFAULT_SETTINGS;
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(data) };
+      const parsed = JSON.parse(data);
+      // Migrate legacy default 'Medium' to requested default 'Olympiad Challenge' if untouched
+      if (!parsed.defaultDifficulty || parsed.defaultDifficulty === 'Medium') {
+        parsed.defaultDifficulty = 'Olympiad Challenge';
+      }
+      return { ...DEFAULT_SETTINGS, ...parsed };
     } catch {
       return DEFAULT_SETTINGS;
     }

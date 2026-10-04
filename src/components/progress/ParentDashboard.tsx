@@ -14,12 +14,13 @@ import {
 import { UserProgress, SubjectId, Difficulty } from '../../types';
 import { ProgressService } from '../../services/progressService';
 import { GamificationService } from '../../services/gamificationService';
-import { BADGE_DEFINITIONS, SUBJECT_CONFIGS } from '../../config/olympiadConfig';
+import { BADGE_DEFINITIONS, SUBJECT_CONFIGS, DIFFICULTIES } from '../../config/olympiadConfig';
 import { BadgeCard } from '../common/BadgeCard';
+import { Modal } from '../common/Modal';
 
 interface ParentDashboardProps {
   progress: UserProgress;
-  onPracticeTopic: (subject: SubjectId, topic: string, difficulty: Difficulty) => void;
+  onPracticeTopic: (subject: SubjectId, topic: string, difficulty: Difficulty, count: number) => void;
   onReviewQuestions: () => void;
 }
 
@@ -29,6 +30,9 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   onReviewQuestions,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'topics' | 'mocks' | 'badges'>('overview');
+  const [practiceModalTopic, setPracticeModalTopic] = useState<{ subject: SubjectId; topic: string } | null>(null);
+  const [practiceModalCount, setPracticeModalCount] = useState<number>(10);
+  const [practiceModalDifficulty, setPracticeModalDifficulty] = useState<Difficulty>('Olympiad Challenge');
 
   const overallAccuracy = ProgressService.getOverallAccuracy(progress);
   const subjectStats = ProgressService.getSubjectStats(progress);
@@ -246,7 +250,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     </div>
 
                     <button
-                      onClick={() => onPracticeTopic(item.subject, item.topic, 'Medium')}
+                      onClick={() => {
+                        setPracticeModalTopic({ subject: item.subject, topic: item.topic });
+                        setPracticeModalCount(10);
+                        setPracticeModalDifficulty('Olympiad Challenge');
+                      }}
                       className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
                     >
                       <span>Practice {item.topic}</span>
@@ -376,6 +384,88 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Weak Topic Practice Configuration Modal */}
+      <Modal
+        isOpen={Boolean(practiceModalTopic)}
+        onClose={() => setPracticeModalTopic(null)}
+        title={`Practice: ${practiceModalTopic?.topic || ''}`}
+      >
+        <div className="space-y-5">
+          <div className="bg-rose-50 rounded-2xl p-3 border border-rose-200 text-xs sm:text-sm text-rose-900 font-semibold">
+            Targeted Practice for Weak Topic • {practiceModalTopic?.subject}
+          </div>
+
+          {/* Question Count Choice: 10, 20, 30 */}
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Choose Number of Questions:
+            </label>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[10, 20, 30].map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setPracticeModalCount(num)}
+                  className={`py-3.5 rounded-2xl font-extrabold text-base border-2 transition-all cursor-pointer ${
+                    practiceModalCount === num
+                      ? 'border-rose-500 bg-rose-50 text-rose-900 shadow-xs ring-2 ring-rose-400/20'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-rose-300'
+                  }`}
+                >
+                  {num} Questions
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Difficulty Level (Default: Olympiad Challenge) */}
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Difficulty Level:
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {DIFFICULTIES.map((diff) => (
+                <button
+                  key={diff}
+                  onClick={() => setPracticeModalDifficulty(diff)}
+                  className={`py-2 px-3 rounded-xl border-2 text-xs font-bold transition-all text-center cursor-pointer ${
+                    practiceModalDifficulty === diff
+                      ? 'border-rose-500 bg-rose-50 text-rose-900 shadow-xs'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-rose-300'
+                  }`}
+                >
+                  {diff}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-2">
+            <button
+              onClick={() => {
+                if (practiceModalTopic) {
+                  onPracticeTopic(
+                    practiceModalTopic.subject,
+                    practiceModalTopic.topic,
+                    practiceModalDifficulty,
+                    practiceModalCount
+                  );
+                  setPracticeModalTopic(null);
+                }
+              }}
+              className="w-full py-3.5 bg-linear-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-extrabold rounded-2xl shadow-lg shadow-rose-600/25 active:scale-98 transition-all cursor-pointer text-base"
+            >
+              Start {practiceModalCount} Questions Practice
+            </button>
+            <button
+              onClick={() => setPracticeModalTopic(null)}
+              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

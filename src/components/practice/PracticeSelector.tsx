@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { SubjectId, Grade, Difficulty } from '../../types';
 import { SUBJECT_CONFIGS, DIFFICULTIES } from '../../config/olympiadConfig';
-import { Sparkles, Dices, BookOpen, Clock, Award } from 'lucide-react';
+import { Sparkles, Dices, BookOpen, Clock, Award, X } from 'lucide-react';
+import { Modal } from '../common/Modal';
 
 interface PracticeSelectorProps {
   selectedGrade: Grade;
-  onStartTopicPractice: (subject: SubjectId, topic: string, difficulty: Difficulty) => void;
+  onStartTopicPractice: (subject: SubjectId, topic: string, difficulty: Difficulty, count: number) => void;
   onStartRandomPractice: (subject: SubjectId, count: number, difficulty: Difficulty) => void;
   onStartMockExam: (subject: SubjectId, questionCount: number) => void;
-  onStartPreviousYearPractice: (subject: SubjectId) => void;
+  onStartPreviousYearPractice: (subject: SubjectId, count: number) => void;
   initialSubject?: SubjectId;
 }
 
@@ -22,11 +23,33 @@ export const PracticeSelector: React.FC<PracticeSelectorProps> = ({
 }) => {
   const [selectedSubject, setSelectedSubject] = useState<SubjectId>(initialSubject);
   const [activeTab, setActiveTab] = useState<'topics' | 'random' | 'mock' | 'exam_style'>('topics');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('Medium');
+  // Default level is Olympiad Challenge
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('Olympiad Challenge');
+
+  // Question count states for each mode - all offering 10, 20, and 30
   const [randomQuestionCount, setRandomQuestionCount] = useState<number>(10);
   const [mockQuestionCount, setMockQuestionCount] = useState<number>(20);
+  const [examStyleQuestionCount, setExamStyleQuestionCount] = useState<number>(10);
+
+  // Topic practice configuration modal state
+  const [selectedTopicForModal, setSelectedTopicForModal] = useState<string | null>(null);
+  const [topicModalCount, setTopicModalCount] = useState<number>(10);
+  const [topicModalDifficulty, setTopicModalDifficulty] = useState<Difficulty>('Olympiad Challenge');
 
   const currentSubjectConfig = SUBJECT_CONFIGS[selectedSubject];
+
+  const handleOpenTopicModal = (topic: string) => {
+    setSelectedTopicForModal(topic);
+    setTopicModalCount(10);
+    setTopicModalDifficulty(selectedDifficulty);
+  };
+
+  const handleConfirmTopicPractice = () => {
+    if (selectedTopicForModal) {
+      onStartTopicPractice(selectedSubject, selectedTopicForModal, topicModalDifficulty, topicModalCount);
+      setSelectedTopicForModal(null);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto py-5 px-4 pb-24 md:pb-8">
@@ -119,7 +142,7 @@ export const PracticeSelector: React.FC<PracticeSelectorProps> = ({
         </button>
       </div>
 
-      {/* Difficulty Selector Bar (for Topics & Random modes) */}
+      {/* Difficulty Selector Bar (Default is Olympiad Challenge) */}
       {(activeTab === 'topics' || activeTab === 'random') && (
         <div className="bg-white rounded-2xl p-4 border border-amber-200 mb-6 shadow-2xs flex flex-wrap items-center justify-between gap-3">
           <div className="text-xs sm:text-sm font-bold text-slate-700">
@@ -159,9 +182,7 @@ export const PracticeSelector: React.FC<PracticeSelectorProps> = ({
             {currentSubjectConfig.topics.map((topic, idx) => (
               <button
                 key={topic}
-                onClick={() =>
-                  onStartTopicPractice(selectedSubject, topic, selectedDifficulty)
-                }
+                onClick={() => handleOpenTopicModal(topic)}
                 className="bg-white hover:bg-amber-50/70 border-2 border-slate-200 hover:border-amber-400 p-4 rounded-2xl text-left transition-all duration-150 active:scale-98 shadow-xs flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3">
@@ -193,23 +214,24 @@ export const PracticeSelector: React.FC<PracticeSelectorProps> = ({
                 Random Practice
               </h2>
               <p className="text-xs sm:text-sm text-slate-600">
-                Mix of interesting questions across all {currentSubjectConfig.name} topics for {selectedGrade}.
+                Mix of questions across all {currentSubjectConfig.name} topics for {selectedGrade}.
               </p>
             </div>
           </div>
 
+          {/* Question Count Selector: 10, 20, 30 */}
           <div className="mb-6">
             <label className="block text-sm font-bold text-slate-700 mb-2">
               Number of Questions:
             </label>
             <div className="grid grid-cols-3 gap-3">
-              {[5, 10, 20].map((num) => (
+              {[10, 20, 30].map((num) => (
                 <button
                   key={num}
                   onClick={() => setRandomQuestionCount(num)}
-                  className={`py-3 rounded-2xl font-extrabold text-base border-2 transition-all cursor-pointer ${
+                  className={`py-3.5 rounded-2xl font-extrabold text-base sm:text-lg border-2 transition-all cursor-pointer ${
                     randomQuestionCount === num
-                      ? 'border-amber-500 bg-amber-50 text-amber-800 shadow-xs'
+                      ? 'border-amber-500 bg-amber-50 text-amber-800 shadow-xs ring-2 ring-amber-400/20'
                       : 'border-slate-200 text-slate-600 hover:border-amber-300'
                   }`}
                 >
@@ -230,7 +252,7 @@ export const PracticeSelector: React.FC<PracticeSelectorProps> = ({
             className="w-full min-h-[54px] bg-linear-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-extrabold text-lg rounded-2xl shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer"
           >
             <Sparkles className="w-5 h-5" />
-            <span>Start Random Practice</span>
+            <span>Start Random Practice ({randomQuestionCount} Questions)</span>
           </button>
         </div>
       )}
@@ -258,6 +280,7 @@ export const PracticeSelector: React.FC<PracticeSelectorProps> = ({
             <p>• You can skip tricky questions and jump back to them before submitting.</p>
           </div>
 
+          {/* Exam Length Selector: 10, 20, 30 */}
           <div className="mb-6">
             <label className="block text-sm font-bold text-slate-700 mb-2">
               Select Exam Length:
@@ -271,13 +294,13 @@ export const PracticeSelector: React.FC<PracticeSelectorProps> = ({
                 <button
                   key={opt.count}
                   onClick={() => setMockQuestionCount(opt.count)}
-                  className={`py-3 px-2 rounded-2xl border-2 text-center transition-all cursor-pointer ${
+                  className={`py-3.5 px-2 rounded-2xl border-2 text-center transition-all cursor-pointer ${
                     mockQuestionCount === opt.count
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-900 shadow-xs'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-900 shadow-xs ring-2 ring-indigo-400/20'
                       : 'border-slate-200 text-slate-600 hover:border-indigo-300'
                   }`}
                 >
-                  <div className="font-extrabold text-base">{opt.count} Questions</div>
+                  <div className="font-extrabold text-base sm:text-lg">{opt.count} Questions</div>
                   <div className="text-xs font-semibold text-slate-600">{opt.time}</div>
                 </button>
               ))}
@@ -289,7 +312,7 @@ export const PracticeSelector: React.FC<PracticeSelectorProps> = ({
             className="w-full min-h-[54px] bg-linear-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-extrabold text-lg rounded-2xl shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer"
           >
             <Clock className="w-5 h-5" />
-            <span>Start Mock Exam</span>
+            <span>Start Mock Exam ({mockQuestionCount} Questions)</span>
           </button>
         </div>
       )}
@@ -311,22 +334,110 @@ export const PracticeSelector: React.FC<PracticeSelectorProps> = ({
             </div>
           </div>
 
-          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-6 text-xs text-slate-600 font-medium">
-            <p className="mb-1 font-bold text-slate-700">Notice:</p>
-            <p>
-              All questions are verified original Olympiad-style problems testing conceptual understanding, pattern recognition, and elimination strategies for {selectedGrade}.
-            </p>
+          {/* Question Count: 10, 20, 30 */}
+          <div className="mb-6">
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              Select Number of Questions:
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {[10, 20, 30].map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setExamStyleQuestionCount(num)}
+                  className={`py-3.5 rounded-2xl font-extrabold text-base sm:text-lg border-2 transition-all cursor-pointer ${
+                    examStyleQuestionCount === num
+                      ? 'border-purple-500 bg-purple-50 text-purple-900 shadow-xs ring-2 ring-purple-400/20'
+                      : 'border-slate-200 text-slate-600 hover:border-purple-300'
+                  }`}
+                >
+                  {num} Questions
+                </button>
+              ))}
+            </div>
           </div>
 
           <button
-            onClick={() => onStartPreviousYearPractice(selectedSubject)}
+            onClick={() => onStartPreviousYearPractice(selectedSubject, examStyleQuestionCount)}
             className="w-full min-h-[54px] bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-lg rounded-2xl shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer"
           >
             <Award className="w-5 h-5" />
-            <span>Practice Olympiad-Style Questions</span>
+            <span>Practice Olympiad-Style ({examStyleQuestionCount} Questions)</span>
           </button>
         </div>
       )}
+
+      {/* Topic Practice Configuration Modal (Prompts for 10, 20, 30 Questions) */}
+      <Modal
+        isOpen={Boolean(selectedTopicForModal)}
+        onClose={() => setSelectedTopicForModal(null)}
+        title={`Practice: ${selectedTopicForModal || ''}`}
+      >
+        <div className="space-y-5">
+          <div className="bg-amber-50 rounded-2xl p-3 border border-amber-200 text-xs sm:text-sm text-amber-900 font-semibold">
+            {selectedSubject} • {selectedGrade}
+          </div>
+
+          {/* Choose 10, 20, or 30 questions */}
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Choose Number of Questions:
+            </label>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[10, 20, 30].map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setTopicModalCount(num)}
+                  className={`py-3 rounded-2xl font-extrabold text-base border-2 transition-all cursor-pointer ${
+                    topicModalCount === num
+                      ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs ring-2 ring-amber-400/20'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-amber-300'
+                  }`}
+                >
+                  {num} Questions
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Difficulty Level (Default: Olympiad Challenge) */}
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">
+              Difficulty Level:
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {DIFFICULTIES.map((diff) => (
+                <button
+                  key={diff}
+                  onClick={() => setTopicModalDifficulty(diff)}
+                  className={`py-2 px-3 rounded-xl border-2 text-xs font-bold transition-all text-center cursor-pointer ${
+                    topicModalDifficulty === diff
+                      ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-amber-300'
+                  }`}
+                >
+                  {diff}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Confirm Start */}
+          <div className="pt-2 flex flex-col gap-2">
+            <button
+              onClick={handleConfirmTopicPractice}
+              className="w-full py-3.5 bg-linear-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-extrabold rounded-2xl shadow-lg shadow-amber-500/25 active:scale-98 transition-all cursor-pointer text-base"
+            >
+              Start {topicModalCount} Questions Practice
+            </button>
+            <button
+              onClick={() => setSelectedTopicForModal(null)}
+              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
