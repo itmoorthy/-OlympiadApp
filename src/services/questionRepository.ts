@@ -1,5 +1,6 @@
 import { Question, SubjectId, Grade, Difficulty, QuestionSourceType } from '../types';
 import { CURATED_QUESTION_BANK } from './questionBank';
+import { ProceduralQuestionGenerator } from './proceduralQuestionGenerator';
 
 const CACHE_KEY = 'olympiad_buddy_question_cache_v1';
 
@@ -122,6 +123,22 @@ export class QuestionRepository {
           pool.push(item);
           poolSet.add(item.id);
         }
+      }
+    }
+
+    // If still less than requested count, generate targeted procedural questions for this exact topic!
+    if (pool.length < count && filterCriteria.subject && filterCriteria.grade) {
+      const needed = count - pool.length;
+      const proceduralQuestions = ProceduralQuestionGenerator.generateQuestions(
+        filterCriteria.subject,
+        filterCriteria.grade,
+        filterCriteria.topic || 'General',
+        needed,
+        filterCriteria.difficulty || 'Medium'
+      );
+      this.addQuestions(proceduralQuestions);
+      for (const item of proceduralQuestions) {
+        pool.push(item);
       }
     }
 
