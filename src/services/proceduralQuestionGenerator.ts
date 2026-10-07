@@ -346,6 +346,63 @@ export class ProceduralQuestionGenerator {
         exp: 'Water helps transport nutrients, regulate body temperature through perspiration, and flush out metabolic waste.',
       },
       {
+        topic: 'Human Needs',
+        q: 'Why should we never touch electrical switches or appliances with wet hands?',
+        ans: 'Water conducts electricity and can cause severe electric shocks',
+        opts: [
+          'Water conducts electricity and can cause severe electric shocks',
+          'Water causes the light bulb to burn out immediately',
+          'Water increases the household electricity bill',
+          'Water changes the colour of the wires'
+        ],
+        exp: 'Tap water contains dissolved mineral ions that conduct electric currents easily. Touching a switch with wet hands can trigger a dangerous electrical shock.',
+      },
+      {
+        topic: 'Human Needs',
+        q: 'What kind of mobile house is constructed on wheels and can be pulled by a vehicle from place to place?',
+        ans: 'Caravan',
+        opts: ['Caravan', 'Igloo', 'Houseboat', 'Stilt house'],
+        exp: 'A caravan (or camper van) is a house built on a chassis with wheels, allowing nomadic families or travelers to move their home anywhere.',
+      },
+      {
+        topic: 'Human Needs',
+        q: 'Which item in a First Aid box is specifically applied to wounds to clean them and prevent bacterial infection?',
+        ans: 'Antiseptic lotion or cream',
+        opts: ['Antiseptic lotion or cream', 'Hair oil', 'Toothpaste', 'Chalk powder'],
+        exp: 'Antiseptics (like Dettol or Savlon) kill harmful pathogens and germs present around broken skin, preventing infections.',
+      },
+      {
+        topic: 'Human Needs',
+        q: 'Why is it unsafe to eat cut fruits or food items sold uncovered along busy roadsides?',
+        ans: 'Dust, vehicle smoke, and houseflies contaminate the food with disease germs',
+        opts: [
+          'Dust, vehicle smoke, and houseflies contaminate the food with disease germs',
+          'Uncovered food loses all its vitamins instantly in 2 minutes',
+          'Uncovered food turns into pure salt',
+          'Roadside food is too hot to chew'
+        ],
+        exp: 'Flies sit on garbage and transfer harmful bacteria onto exposed food. Inhaling dust and consuming fly-contaminated food causes food poisoning.',
+      },
+      {
+        topic: 'Human Needs',
+        q: 'Which synthetic, water-resistant material is most commonly used to manufacture umbrellas and raincoats?',
+        ans: 'Nylon or Polyester',
+        opts: ['Nylon or Polyester', 'Pure Cotton', 'Soft Wool', 'Jute fiber'],
+        exp: 'Nylon and synthetic fabrics are non-porous and water-resistant, causing raindrops to slide right off without soaking through.',
+      },
+      {
+        topic: 'Human Needs',
+        q: 'Why do we feel intense thirst after running or exercising under bright sunshine?',
+        ans: 'The body loses water through sweat to cool down, needing rehydration',
+        opts: [
+          'The body loses water through sweat to cool down, needing rehydration',
+          'Muscles burn water instead of oxygen',
+          'Sunshine evaporates all saliva inside the mouth',
+          'Running stops the stomach from absorbing food'
+        ],
+        exp: 'Sweating cools the skin via evaporation, but depletes water and body salts. The brain triggers thirst to restore proper fluid balance.',
+      },
+      {
         topic: 'Matter and Materials',
         q: 'The temperature at which pure water begins to boil at sea level is:',
         ans: '100°C',
@@ -401,10 +458,27 @@ export class ProceduralQuestionGenerator {
         opts: ['Reflection of light', 'Refraction of light', 'Absorption of light', 'Photosynthesis'],
         exp: 'Reflection is the bouncing back of light rays when they hit a smooth, polished, or shiny surface like a mirror.',
       },
+      {
+        topic: 'Logical Reasoning',
+        q: 'Which of the following animals does NOT belong to the group based on their body covering?',
+        ans: 'Earthworm',
+        opts: ['Earthworm', 'Fish', 'Snake', 'Lizard'],
+        exp: 'Fish, snakes, and lizards all have scaly skin or scales covering their bodies, whereas earthworms have moist, segmented, scaleless skin.',
+      },
+      {
+        topic: 'Logical Reasoning',
+        q: 'If Bear is an Omnivore and Sheep is an Herbivore, what is a Hyena?',
+        ans: 'Carnivore (Scavenger)',
+        opts: ['Carnivore (Scavenger)', 'Herbivore', 'Producer', 'Decomposer'],
+        exp: 'Hyenas are carnivorous animals that hunt prey and scavenge meat left behind by larger predators.',
+      },
     ];
 
-    // Filter by topic if possible
-    const matching = scienceBank.filter((s) => s.topic.toLowerCase().includes(topic.toLowerCase()) || topic.toLowerCase().includes(s.topic.toLowerCase()));
+    // Filter by topic strictly if possible
+    const normalizedTarget = topic.toLowerCase();
+    const matching = scienceBank.filter(
+      (s) => s.topic.toLowerCase().includes(normalizedTarget) || normalizedTarget.includes(s.topic.toLowerCase())
+    );
     const item = matching.length > 0 ? this.randomChoice(matching) : this.randomChoice(scienceBank);
 
     const shuffledOpts = this.shuffle4(item.opts);
@@ -417,7 +491,7 @@ export class ProceduralQuestionGenerator {
       explanation: item.exp,
       subject: 'ISO',
       grade,
-      topic: item.topic,
+      topic: matching.length > 0 ? item.topic : topic,
       difficulty,
       sourceType: 'generated',
     };
@@ -521,9 +595,24 @@ export class ProceduralQuestionGenerator {
         opts: ['Decomposition', 'Abstraction', 'Algorithm design', 'Pattern recognition'],
         exp: 'Decomposition is a foundational computational thinking skill where complex systems are split into smaller bite-sized steps.',
       },
+      {
+        topic: 'Logical Thinking',
+        q: 'If KEY is coded as L-F-Z (shifting each letter forward by 1 position in alphabet), what will DOOR be coded as?',
+        ans: 'E-P-P-S',
+        opts: ['E-P-P-S', 'D-O-O-S', 'F-P-P-T', 'E-Q-Q-T'],
+        exp: 'Each letter is shifted +1: D becomes E, O becomes P, O becomes P, and R becomes S. So DOOR = E-P-P-S.',
+      },
+      {
+        topic: 'Patterns',
+        q: 'Look at the visual pattern of shapes: Circle, Triangle, Square, Circle, Triangle, Square, Circle, ___? What comes next?',
+        ans: 'Triangle',
+        opts: ['Triangle', 'Square', 'Circle', 'Pentagon'],
+        exp: 'The repeating cycle has length 3: [Circle, Triangle, Square]. After Circle, the next shape in the sequence is Triangle.',
+      },
     ];
 
-    const matching = csBank.filter((c) => c.topic.toLowerCase().includes(topic.toLowerCase()) || topic.toLowerCase().includes(c.topic.toLowerCase()));
+    const normalizedTarget = topic.toLowerCase();
+    const matching = csBank.filter((c) => c.topic.toLowerCase().includes(normalizedTarget) || normalizedTarget.includes(c.topic.toLowerCase()));
     const item = matching.length > 0 ? this.randomChoice(matching) : this.randomChoice(csBank);
 
     const shuffledOpts = this.shuffle4(item.opts);
@@ -536,7 +625,7 @@ export class ProceduralQuestionGenerator {
       explanation: item.exp,
       subject: 'ICSO',
       grade,
-      topic: item.topic,
+      topic: matching.length > 0 ? item.topic : topic,
       difficulty,
       sourceType: 'generated',
     };

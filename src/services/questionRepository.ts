@@ -69,12 +69,10 @@ export class QuestionRepository {
     return all.filter((q) => {
       if (criteria.subject && q.subject !== criteria.subject) return false;
       if (criteria.grade && q.grade !== criteria.grade) return false;
-      if (criteria.topic && q.topic.toLowerCase() !== criteria.topic.toLowerCase()) {
-        // Also allow partial match
-        if (
-          !q.topic.toLowerCase().includes(criteria.topic.toLowerCase()) &&
-          !criteria.topic.toLowerCase().includes(q.topic.toLowerCase())
-        ) {
+      if (criteria.topic) {
+        const needle = criteria.topic.trim().toLowerCase();
+        const cand = q.topic.trim().toLowerCase();
+        if (cand !== needle && !cand.includes(needle) && !needle.includes(cand)) {
           return false;
         }
       }
@@ -85,7 +83,7 @@ export class QuestionRepository {
   }
 
   /**
-   * Get random selection of questions avoiding recent IDs where possible
+   * Get random selection of questions strictly adhering to topic when requested
    */
   public static getRandomQuestions(
     count: number,
@@ -97,9 +95,69 @@ export class QuestionRepository {
     },
     excludeIds: string[] = []
   ): Question[] {
+    // 1. If a specific topic is requested: NEVER cross-pollinate with other topics!
+    if (filterCriteria.topic && filterCriteria.topic.trim() !== '') {
+      const requestedTopic = filterCriteria.topic.trim();
+
+      // Step A: exact topic + difficulty
+      let pool = this.filter({
+        subject: filterCriteria.subject,
+        grade: filterCriteria.grade,
+        topic: requestedTopic,
+        difficulty: filterCriteria.difficulty,
+      });
+
+      // Step B: if not enough, relax ONLY difficulty (keep topic strictly identical)
+      if (pool.length < count) {
+        const sameTopicOtherDifficulties = this.filter({
+          subject: filterCriteria.subject,
+          grade: filterCriteria.grade,
+          topic: requestedTopic,
+        });
+        const poolSet = new Set(pool.map((q) => q.id));
+        for (const item of sameTopicOtherDifficulties) {
+          if (!poolSet.has(item.id)) {
+            pool.push(item);
+            poolSet.add(item.id);
+          }
+        }
+      }
+
+      // Step C: if still not enough, procedurally generate for THIS EXACT TOPIC
+      if (pool.length < count && filterCriteria.subject && filterCriteria.grade) {
+        const needed = count - pool.length;
+        const generated = ProceduralQuestionGenerator.generateQuestions(
+          filterCriteria.subject,
+          filterCriteria.grade,
+          requestedTopic,
+          needed,
+          filterCriteria.difficulty || 'Medium'
+        );
+        this.addQuestions(generated);
+        for (const item of generated) {
+          pool.push(item);
+        }
+      }
+
+      // Strict safety check: ensure every question in pool is genuinely for this topic
+      const topicLower = requestedTopic.toLowerCase();
+      pool = pool.filter((q) => {
+        const cand = q.topic.toLowerCase();
+        return cand.includes(topicLower) || topicLower.includes(cand);
+      });
+
+      // Exclude recently seen if possible
+      const fresh = pool.filter((q) => !excludeIds.includes(q.id));
+      const finalPool = fresh.length >= count ? fresh : pool;
+
+      // Shuffle and return exact count
+      const shuffled = [...finalPool].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, count);
+    }
+
+    // 2. If NO specific topic requested (Random Practice / Mock Exam across entire subject):
     let pool = this.filter(filterCriteria);
 
-    // If pool is small, relax difficulty or topic
     if (pool.length < count) {
       const relaxed = this.filter({
         subject: filterCriteria.subject,
@@ -114,25 +172,12 @@ export class QuestionRepository {
       }
     }
 
-    // Still small? Take any for the subject or general
-    if (pool.length < count && filterCriteria.subject) {
-      const subjectPool = this.filter({ subject: filterCriteria.subject });
-      const poolSet = new Set(pool.map((q) => q.id));
-      for (const item of subjectPool) {
-        if (!poolSet.has(item.id)) {
-          pool.push(item);
-          poolSet.add(item.id);
-        }
-      }
-    }
-
-    // If still less than requested count, generate targeted procedural questions for this exact topic!
     if (pool.length < count && filterCriteria.subject && filterCriteria.grade) {
       const needed = count - pool.length;
       const proceduralQuestions = ProceduralQuestionGenerator.generateQuestions(
         filterCriteria.subject,
         filterCriteria.grade,
-        filterCriteria.topic || 'General',
+        'General',
         needed,
         filterCriteria.difficulty || 'Medium'
       );
@@ -142,11 +187,9 @@ export class QuestionRepository {
       }
     }
 
-    // Exclude recently seen if possible
     const fresh = pool.filter((q) => !excludeIds.includes(q.id));
     const finalPool = fresh.length >= count ? fresh : pool;
 
-    // Shuffle
     const shuffled = [...finalPool].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, count);
   }
